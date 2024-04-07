@@ -1,0 +1,5 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Extensões Tailwind de css, para manipulação de estilos através das "className" - Doc: https://tailwindcss.com */
