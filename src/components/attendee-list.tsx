@@ -7,36 +7,69 @@ import { Table } from './table/table'
 import { TableHeader } from './table/table-header'
 import { TableCell } from './table/table-cell'
 import { TableRow } from './table/table-Row'
-import { ChangeEvent, useState } from 'react'
-import { attendees } from '../data/attendees'
+import { ChangeEvent, useEffect, useState } from 'react'
+// import { attendees } from '../data/attendees'
 
 dayjs.extend(relativeTime)
 dayjs.locale('pt-br')
 
 export function AttendeeList() {
 
-    const totalPages = Math.ceil(attendees.length / 10);
+    interface Attendee {
+        id: string
+        name: string
+        email: string
+        createdAt: string
+        checkedInAt: string | null
+    }
 
+    //useState<Attendee[]> Aqui informo que esse array receberá os dados no formato acima.
+    const [attendees, setAttendees] = useState<Attendee[]>([])
     const [search, setShearch] = useState('');
     const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0)
+
+    const totalPages = Math.ceil(total / 10);
+
+    
+
+    useEffect(() => {
+
+        const url = new URL('http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees')
+
+        url.searchParams.set('pageIndex', String(page - 1))
+
+        if (search.length > 0){
+            url.searchParams.set('query', search )
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                setAttendees(data.attendees)
+                setTotal(data.total)
+            })
+    }, [page, search])
 
     function onSearchInputChange(event: ChangeEvent<HTMLInputElement>) {
 
         setShearch(event.target.value)
-    }
-
-    function goToNextPage (){
-        setPage(page + 1)
-    }
-
-    function goToPreviousPage (){
-        setPage(page - 1)
-    }
-    function goToFirstPage (){
         setPage(1)
     }
 
-    function goToLastPage (){
+    function goToNextPage() {
+        setPage(page + 1)
+    }
+
+    function goToPreviousPage() {
+        setPage(page - 1)
+    }
+    function goToFirstPage() {
+        setPage(1)
+    }
+
+    function goToLastPage() {
         setPage(totalPages)
     }
 
@@ -53,7 +86,7 @@ export function AttendeeList() {
 
                     <Search className='size-4 text-emerald-300' />
 
-                    <input onChange={onSearchInputChange} className="bg-transparent flex-1 outline-none p-0 border-none text-sm " placeholder="Buscar Participante" />
+                    <input onChange={onSearchInputChange} className="bg-transparent flex-1 outline-none p-0 border-none text-sm focus:ring-0" placeholder="Buscar Participante" />
 
                 </div>
             </div>
@@ -75,7 +108,7 @@ export function AttendeeList() {
                 </thead>
 
                 <tbody>
-                    {attendees.slice((page - 1) * 10, page * 10).map((attendee) => {
+                    {attendees.map((attendee) => {
                         return (
                             <TableRow key={attendee.id} >
                                 <TableCell>
@@ -90,7 +123,11 @@ export function AttendeeList() {
                                 </TableCell>
                                 {/* Configura a data para que fica no formato do Brasil */}
                                 <TableCell>{dayjs().to(attendee.createdAt)}</TableCell>
-                                <TableCell>{dayjs().to(attendee.checkedInAt)}</TableCell>
+                                <TableCell>
+                                    {attendee.checkedInAt === null 
+                                    ? <span className='text-zinc-600'>Não fez Check-in</span> 
+                                    : dayjs().to(attendee.checkedInAt)}
+                                </TableCell>
 
                                 <TableCell>
                                     {/* A propriedade transparent tem a finalidade de diferenciar esse botão dos demais, para evitar-mos de criar um novo component */}
@@ -105,7 +142,7 @@ export function AttendeeList() {
                 <tfoot>
                     <TableRow>
                         <TableCell colSpan={3}>
-                            Mostrando {page * 10} de {attendees.length} itens
+                            Mostrando {attendees.length} de {total} itens
                         </TableCell>
 
                         <TableCell className='text-right' colSpan={3} >
@@ -114,7 +151,7 @@ export function AttendeeList() {
 
                                 <div className='flex gap-1.5'>
                                     <IconButton onClick={goToFirstPage} disabled={page === 1} >
-                                        <ChevronsLeft  />
+                                        <ChevronsLeft />
                                     </IconButton>
 
                                     <IconButton onClick={goToPreviousPage} disabled={page === 1}>
@@ -126,7 +163,7 @@ export function AttendeeList() {
                                     </IconButton>
 
                                     <IconButton onClick={goToLastPage} disabled={page === totalPages}>
-                                        <ChevronsRight  />
+                                        <ChevronsRight />
                                     </IconButton>
                                 </div>
                             </div>
